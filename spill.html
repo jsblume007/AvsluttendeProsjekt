@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <title>Bilspill med Politijakt</title>
+  <style>
+    body {
+      text-align: center;
+      font-family: Arial;
+      background-color: #e0f7fa;
+    }
+
+    canvas {
+      background-color: #ccc;
+      display: block;
+      margin: 20px auto;
+      border: 3px solid #333;
+    }
+  </style>
+</head>
+<body>
+  <h1>🚓 Bilspill med Politijakt!</h1>
+  <p>Bruk piltastene og unngå å bli tatt av politiet!</p>
+
+  <canvas id="gameCanvas" width="400" height="600"></canvas>
+
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const car = {
+      x: 180,
+      y: 500,
+      width: 40,
+      height: 80,
+      color: "blue",
+      speed: 5
+    };
+
+    const redCars = [
+      { x: 120, y: -100, width: 40, height: 80, speed: 3 },
+      { x: 240, y: -300, width: 40, height: 80, speed: 4 }
+    ];
+
+    const policeCars = [
+      { x: 60, y: -200, width: 40, height: 80, speed: 2, lightOn: true },
+      { x: 300, y: -500, width: 40, height: 80, speed: 2, lightOn: false }
+    ];
+
+    const keys = {};
+    document.addEventListener("keydown", e => keys[e.key] = true);
+    document.addEventListener("keyup", e => keys[e.key] = false);
+
+    function drawCar(carObj, color, details = true, lights = false) {
+      ctx.fillStyle = color;
+      ctx.fillRect(carObj.x, carObj.y, carObj.width, carObj.height);
+
+      if (details) {
+        // Frontlykter
+        ctx.fillStyle = "yellow";
+        ctx.fillRect(carObj.x + 5, carObj.y + 5, 5, 5);
+        ctx.fillRect(carObj.x + carObj.width - 10, carObj.y + 5, 5, 5);
+
+        // Hjul
+        ctx.fillStyle = "#333";
+        ctx.fillRect(carObj.x + 5, carObj.y + 15, 5, 10);
+        ctx.fillRect(carObj.x + carObj.width - 10, carObj.y + 15, 5, 10);
+        ctx.fillRect(carObj.x + 5, carObj.y + carObj.height - 25, 5, 10);
+        ctx.fillRect(carObj.x + carObj.width - 10, carObj.y + carObj.height - 25, 5, 10);
+      }
+
+      if (lights) {
+        ctx.fillStyle = carObj.lightOn ? "blue" : "red";
+        ctx.fillRect(carObj.x + 12, carObj.y + 5, 6, 6);
+      }
+    }
+
+    function movePlayer() {
+      if (keys["ArrowLeft"] && car.x > 0) car.x -= car.speed;
+      if (keys["ArrowRight"] && car.x + car.width < canvas.width) car.x += car.speed;
+      if (keys["ArrowUp"] && car.y > 0) car.y -= car.speed;
+      if (keys["ArrowDown"] && car.y + car.height < canvas.height) car.y += car.speed;
+    }
+
+    function moveRedCars() {
+      redCars.forEach(ob => {
+        ob.y += ob.speed;
+        if (ob.y > canvas.height) {
+          ob.y = -100;
+          ob.x = Math.random() * (canvas.width - ob.width);
+        }
+      });
+    }
+
+    function movePoliceCars() {
+      policeCars.forEach(p => {
+        // Følger spilleren gradvis
+        if (p.x < car.x) p.x += 1;
+        if (p.x > car.x) p.x -= 1;
+        p.y += p.speed;
+
+        if (p.y > canvas.height) {
+          p.y = -200 - Math.random() * 300;
+          p.x = Math.random() * (canvas.width - p.width);
+        }
+
+        // Blinkende blålys
+        p.lightOn = !p.lightOn;
+      });
+    }
+
+    function detectCollision(a, b) {
+      return (
+        a.x < b.x + b.width &&
+        a.x + a.width > b.x &&
+        a.y < b.y + b.height &&
+        a.y + a.height > b.y
+      );
+    }
+
+    function drawGame() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      movePlayer();
+      moveRedCars();
+      movePoliceCars();
+
+      drawCar(car, "blue");
+
+      redCars.forEach(rc => drawCar(rc, "red"));
+      policeCars.forEach(pc => drawCar(pc, "white", true, true));
+
+      // Kollisjonssjekk
+      [...redCars, ...policeCars].forEach(enemy => {
+        if (detectCollision(car, enemy)) {
+          alert("💥 Du krasjet eller ble tatt av politiet!");
+          document.location.reload();
+        }
+      });
+
+      requestAnimationFrame(drawGame);
+    }
+
+    drawGame();
+  </script>
+</body>
+</html>
